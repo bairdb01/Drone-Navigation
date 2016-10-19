@@ -4,18 +4,16 @@ import java.util.*;
 
 /**
  * Navigate through a field, get to end point while covering all non-blocked tiles/cells
- * TODO  Use start position and closest rectangle spot, rather than upper left when weighting closest rectangle (use an expanding radius, and rectContains)
+ * TODO: Optimization: Use start position and closest rectangle spot, rather than upper left when weighting closest rectangle (use an expanding radius, and rectContains)
  * TODO: Optimization: Prioritize rectangles which are not accessible through subsequent rectangles/nodes
  * TODO: Optimization: Allow traversal over buildings as a route if faster
  *
- * TODO: BUG FIX: If no path between the next rectangle, infinite loop
  */
 
 class Drone {
-    private int [][] field;
-    private int [] start; // col, row
+    private int [][] field; // Rows, Columns
     private int [] goal;
-    private Integer [] curLoc;
+    private Integer [] curLoc; // [0] = columns, [1] = rows
     private int [] dimensions;  // Dimensions of field (x, y)
     private HashMap<Integer, Integer> rectangleAreas;
     private HashMap<Integer, Integer[][]> rectangles; // (-1: {{x1,y1},{x2,y2}})
@@ -24,11 +22,8 @@ class Drone {
     Drone(int [] dimen, int [] start, int [] end){
         dimensions = dimen.clone();
         field = new int[dimen[1]][dimen[0]];
-        this.start = new int[2];
         goal = new int[2];
         curLoc = new Integer[2];
-        this.start[0] = start[0];
-        this.start[1] = start[1];
         this.goal[0] = end[0];
         this.goal[1] = end[1];
         this.curLoc[0] = start[0];
@@ -151,9 +146,8 @@ class Drone {
             HashSet<Integer> neighbours = rectangleNeighbours(i);
             traversalGraph.put(i, neighbours);
         }
-        Iterator it = traversalGraph.entrySet().iterator();
-        while(it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
+        for (Object o : traversalGraph.entrySet()) {
+            Map.Entry pair = (Map.Entry) o;
             System.out.println(pair.getKey() + " = " + pair.getValue());
         }
     }
@@ -173,7 +167,7 @@ class Drone {
     /**
      * Print the field to stdout
      */
-    void printField() {
+    private void printField() {
         System.out.println();
         for (int [] column:
                 field) {
@@ -187,9 +181,9 @@ class Drone {
 
     /**
      * Uses the euclidean distance between two cells
-     * @param cellOne
-     * @param cellTwo
-     * @return
+     * @param cellOne the coordinates of first cell
+     * @param cellTwo the coordinates of the second cell
+     * @return the euclidean distance between the two cells
      */
     private double cellDistanceWeight(Integer []cellOne, Integer []cellTwo){
         double weight = Math.pow(cellTwo[1] - cellOne[1],2) + Math.pow(cellTwo[0]^2 - cellOne[0]^2,2);
@@ -199,15 +193,14 @@ class Drone {
     /**
      * Figures out the order to cover the rectangles based on degree, size, and distance
      */
-    PriorityQueue<Integer[]> getTraversalOrder(){
+    private PriorityQueue<Integer[]> getTraversalOrder(){
         PriorityQueue<Integer[]> path = new PriorityQueue<>((nodeOne, nodeTwo) -> nodeOne[1] - nodeTwo[1]);
 
         // Initialize queue with priority on lower degree nodes
-        Iterator it = traversalGraph.entrySet().iterator();
-        while(it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            Integer [] node = new Integer[2]; // [0] = rectId, [1] = weight
-            node[0] = (Integer)pair.getKey();
+        for (Object o : traversalGraph.entrySet()) {
+            Map.Entry pair = (Map.Entry) o;
+            Integer[] node = new Integer[2]; // [0] = rectId, [1] = weight
+            node[0] = (Integer) pair.getKey();
             node[1] = traversalGraph.get(pair.getKey()).size();    // Initial weighting = degree
             path.add(node);
         }
@@ -234,10 +227,7 @@ class Drone {
         visited.add(prevNode);
 
         // Add the newly weighted nodes to the queue
-        for (Integer [] node:
-             visited) {
-            path.add(node);
-        }
+        path.addAll(visited);
         visited.clear();
 
         // Prioritize nodes that are close to starting position
@@ -287,7 +277,7 @@ class Drone {
             String rectanglePath = findPath(field[curLoc[1]][curLoc[0]], dest[0]);  // Non-negative rectId
             System.out.println(rectanglePath);
             // Figure direct path through rectangles/nodes
-            if (rectanglePath == "0") {
+            if (rectanglePath.equals("0")) {
                 // Just fly directly to rectangle, since all paths block it
                 // Can find a better path to the rectangle
                 Integer [][] destCoords  = rectangles.get(dest[0]);
@@ -296,10 +286,10 @@ class Drone {
             } else {
                 // Reachable via node traversal
                 String [] pathIds = rectanglePath.split(",");
-                for(int i = 0; i < pathIds.length; i++) {
+                for (String pathId : pathIds) {
                     // Travels the the nearest shared space
-                    Integer destId = -1 * Integer.parseInt(pathIds[i]);
-                    Integer [] joint = findJoiningPoint(field[curLoc[1]][curLoc[0]], destId);
+                    Integer destId = -1 * Integer.parseInt(pathId);
+                    Integer[] joint = findJoiningPoint(field[curLoc[1]][curLoc[0]], destId);
                     traversed.addAll(traverseTo(joint[0], joint[1], false));
                 }
             }
@@ -383,7 +373,7 @@ class Drone {
         int colUp = ( (rect1[1][0] + 1) < dimensions[0]) ? rect1[1][0] + 1 : dimensions[0] - 1;
         int rowDown = ( (rect1[1][1] + 1) < dimensions[1]) ? rect1[1][1] + 1 : dimensions[1] - 1;
         boolean foundJoint = false;
-        Double curJointDistance = new Double(9999);
+        Double curJointDistance = 9999d;
 
         for (int row = startRow; row <= rowDown; row++) {
             for (int col = startCol; col <= colUp; col++) {
