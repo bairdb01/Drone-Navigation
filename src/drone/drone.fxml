@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.text.Text?>
+
+<SplitPane fx:id="splitPane" dividerPositions="0.1" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" orientation="VERTICAL" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.65" xmlns:fx="http://javafx.com/fxml/1" fx:controller="drone.Controller">
+<items>
+    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="50.0" prefWidth="598.0">
+        <children>
+            <Button layoutX="14.0" layoutY="10.0" mnemonicParsing="false" onAction="#openFile" text="Open File..." />
+            <Text fx:id="filenameText" layoutX="116.0" layoutY="28.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Filename" />
+        </children></AnchorPane>
+    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="280.0" prefWidth="598.0">
+        <children>
+            <BorderPane layoutX="-2.0" prefHeight="345.0" prefWidth="602.0">
+               <center>
+                  <Canvas fx:id="canvas" height="800.0" width="800.0" BorderPane.alignment="CENTER" />
+               </center>
+            </BorderPane>
+        </children></AnchorPane>
+</items>
+</SplitPane>
